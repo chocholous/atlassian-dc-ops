@@ -90,7 +90,9 @@ atl_curl() {
     "$@" \
     "${base}${path}" || rc=$?
 
-  status="$(awk 'NR==1{print $2}' "$hdr")"
+  # Druhé pole první řádky ("HTTP/1.1 200 OK"). Bash read místo awk — ušetří
+  # proces na každém volání a dělá totéž.
+  read -r _ status _ < "$hdr" || status=""
   rm -f "$hdr"
 
   if [[ $rc -eq 0 && "${status:-}" == 2* ]]; then

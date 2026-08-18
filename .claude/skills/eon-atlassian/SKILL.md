@@ -15,10 +15,13 @@ do transkriptu, commitů ani souborů.
 
 ## Dvě vrstvy, jednoduché pravidlo
 
-**MCP `atlassian-eon` je default** — 23 nástrojů, čtení i zápis pro Jiru
+**MCP `atlassian-eon` je default** — 19 nástrojů, čtení i zápis pro Jiru
 i Confluence, včetně metadat schématu (`jira_get_create_fields`,
-`jira_get_link_types`, `jira_get_project_components`, `jira_get_project_versions`,
-`jira_get_field_options`).
+`jira_get_project_issue_types`). Přesný seznam je v `.mcp.json`.
+
+Linkování issues v allowlistu **není** — kdybys ho potřeboval, musí se přidat
+`jira_create_issue_link` i `jira_get_link_types` naráz, jinak jedno bez druhého
+nedává smysl.
 
 **`bin/jira-api` / `bin/conf-api` (REST) použij jen tam, kde MCP nestačí** —
 konkrétní seznam endpointů a limitů je v `references/dc-odchylky.md`. Jinak
