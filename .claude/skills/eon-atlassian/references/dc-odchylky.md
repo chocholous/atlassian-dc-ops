@@ -12,7 +12,8 @@ nebo je nech na MCP nástrojích, které mají vlastní schémata.
 | Confluence | `/rest/api` | `/wiki/rest/api` |
 | Auth | `Authorization: Bearer <PAT>` | e-mail + API token |
 
-`bin/jira-api` připojuje base sám; prefix `@agile/` přepne na `/rest/agile/1.0`.
+Agile API (boardy, sprinty) je pod `/rest/agile/1.0` — ale to všechno pokrývá MCP
+(`jira_get_agile_boards`, `jira_get_sprints_from_board`, `jira_get_sprint_issues`).
 
 ## Jira 10 zrušila starý createmeta
 
@@ -40,24 +41,47 @@ Sub-task navíc `parent`.
 
 `components` a `versions` jsou v AIC prázdné — pole existují, hodnoty ne.
 
-## Počty: čtyři různé limity
+## Počty a limity
 
-| Zdroj | Default | Jak získat celkový počet |
-|---|---|---|
-| MCP `jira_search` | 10 (popis říká max 50) | vrací `total` přímo v odpovědi |
-| MCP `confluence_search` | 10, **strop 50** | `totalSize` NEVRACÍ → musíš přes REST |
-| REST Jira `/search` | 50 | `&maxResults=0` → `.total` |
-| REST Confluence | 25 | `/search?limit=1` → `.totalSize` (`/content/search` vrací jen `size`) |
+| Zdroj | Default | Strop | Celkový počet |
+|---|---|---|---|
+| `jira_search` | 10 | 50 | **vrací `total`** — u Jiry počet znáš |
+| `confluence_search` | 10 | 50 | **nevrací nic a NEUMÍ stránkovat** |
 
-## Endpointy, které MCP nemá
+U Confluence to znamená: přes 50 výsledků se nedostaneš a jejich počet nezjistíš.
+Když dostaneš 50, řekni „nejméně 50" — ne „to je všechno". Znát číslo by nepomohlo,
+protože zbytek stejně nevytáhneš.
+
+Kdybys opravdu potřeboval projít víc, je to REST se stránkováním
+(`/rest/api/search?cql=…&limit=50&start=N`) — tedy smyčka, viz recept níž.
+
+## Endpointy, které MCP nemá — a jak k nim bezpečně
+
+V repu nejsou žádné obálky. Volej curl přímo, ale **token posílej na stdin**:
+argumenty procesu čte každý lokální proces přes `ps`, takže
+`-H "Authorization: Bearer …"` token vystaví (změřeno).
 
 ```bash
-bin/jira-api GET /serverInfo
-bin/jira-api GET /issue/AIC-1/remotelink     # odkazy na Confluence NEJSOU v issuelinks
-bin/conf-api GET '/search?cql=type=page&limit=1'   # kvůli totalSize
-# CSV export celého výběru (vrací CSV, ne JSON):
-#   /sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery=<JQL>
+set -a; . .env; set +a
+
+q() {   # q <url> — GET s tokenem mimo argv
+  printf 'header = "Authorization: Bearer %s"\n' "$JIRA_PERSONAL_TOKEN" \
+    | curl -sS -K - --fail-with-body -H "Accept: application/json" "$1"
+}
+
+q "$JIRA_URL/rest/api/2/issue/AIC-1/remotelink"   # odkazy na Confluence NEJSOU v issuelinks
+q "$JIRA_URL/rest/api/2/serverInfo"                # verzi hlásí i bin/atl-check
 ```
+
+**Nikdy nepřidávej `-v`, `-sv`, `--trace*` ani `--libcurl`** — vypsaly by
+hlavičku Authorization, tedy token, na výstup nebo do souboru.
+
+Confluence má verzi jen v applinks manifestu, tedy pod jiným basem než
+`/rest/api`: `"$CONFLUENCE_URL/rest/applinks/1.0/manifest"`. `serverInfo` na
+Confluence **neexistuje** (404).
+
+CSV export celého výběru (vrací CSV, ne JSON):
+`/sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery=<JQL>`
 
 Historii změn MCP **umí**: `jira_get_issue` s `expand="changelog"`.
 
@@ -73,7 +97,7 @@ zbytek včetně maker na pokoji. Cíl pro nové stránky je `homepage_id` space
 ## Provozní pasti
 
 - **PAT má povinnou expiraci.** Náhlé 401 napříč vším = vypršelý token, ne
-  rozbitá konfigurace. `bin/atl-auth-check`.
+  rozbitá konfigurace. Ověř `bin/atl-check`.
 - **Oficiální `acli` je Cloud-only** a proti těmto instancím nefunguje, i když
   je nainstalovaný.
 - **`--toolsets` s neplatným jménem shodí MCP na 0 nástrojů**, tiše. Proto je

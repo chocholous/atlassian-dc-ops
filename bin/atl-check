@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# Ověří přístup k E.ON Jira DC a Confluence DC a vypíše jejich verze.
+# Nic nemění (jen GET). Jediný skript v repu — vše ostatní jde přes MCP.
+#
+# Použití: bin/atl-check
+#
+# Návratové kódy:
+#   0  vše ověřeno a prošlo
+#   1  něco selhalo
+#   2  nic nebo jen část ověřena (chybí token) — TOHLE NENÍ ÚSPĚCH
+#
+# Proč existuje: MCP server se ohlásí jako "connected" i s prázdnými tokeny
+# a selže až první volání (změřeno). Seznam nástrojů tedy není důkaz přístupu.
+#
+# Ad-hoc dotaz nebo smyčka: použij curl přímo, ale token POSÍLEJ NA STDIN,
+# nikdy přes -H — argumenty procesu čte každý lokální proces přes `ps`:
+#
+#   set -a; . .env; set +a
+#   printf 'header = "Authorization: Bearer %s"\n' "$JIRA_PERSONAL_TOKEN" \
+#     | curl -sS -K - --fail-with-body "$JIRA_URL/rest/api/2/serverInfo" | jq .
+#
+# A nikdy k tomu nepřidávej -v/-sv/--trace/--libcurl — vypsaly by token.
+set -uo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+ENV_FILE="${ATL_ENV_FILE:-.env}"
+
+if [[ ! -f "$ENV_FILE" ]]; then
+  echo "CHYBA: chybí $ENV_FILE" >&2
+  echo "Vytvoř ho:  cp .env.example .env && chmod 600 .env" >&2
+  exit 1
+fi
+set -a; . "$ENV_FILE"; set +a
+
+skipped=0; checked=0; failed=0
+
+# get <base> <token> <path> → tělo na stdout, nenulový rc na HTTP != 2xx.
+# Token jde curlu konfigurací na stdin (-K -), ne v argv.
+get() {
+  local hdr rc=0 status
+  hdr="$(mktemp -t atl_hdr)" || return 1
+  # Accept je nutný: applinks manifest bez něj vrací XML, ne JSON.
+  printf 'header = "Authorization: Bearer %s"\n' "$2" | curl -sS -K - \
+    --fail-with-body --max-time "${ATL_TIMEOUT:-30}" -D "$hdr" \
+    -H "Accept: application/json" "$1$3" || rc=$?
+  read -r _ status _ < "$hdr"; rm -f "$hdr"
+  [[ $rc -eq 0 && "$status" == 2* ]] && return 0
+  echo "HTTP ${status:-?} (401=vypršelý PAT, 403=chybí práva, 3xx=endpoint neexistuje)" >&2
+  return 22
+}
+
+# check <label> <token> <url> <jq_filtr>
+check() {
+  printf '%-14s ' "$1"
+  if [[ -z "$2" ]]; then echo "PŘESKOČENO — token není v .env"; skipped=$((skipped+1)); return; fi
+  checked=$((checked+1))
+  local body err rc=0
+  err="$(mktemp -t atl_err)"
+  body="$(get "$3" "$2" "$4" 2>"$err")" || rc=$?
+  if [[ $rc -eq 0 ]]; then
+    echo "OK — $(printf '%s' "$body" | jq -r "$5" 2>/dev/null || echo '(nelze parsovat)')"
+  else
+    echo "SELHALO"; sed 's/^/               /' "$err" >&2; failed=$((failed+1))
+  fi
+  rm -f "$err"
+}
+
+echo "=== E.ON Atlassian DC ==="
+check "Jira" "${JIRA_PERSONAL_TOKEN:-}" "${JIRA_URL:-}/rest/api/2" "/myself" \
+  '"přihlášen jako " + (.displayName // .name)'
+check "Jira verze" "${JIRA_PERSONAL_TOKEN:-}" "${JIRA_URL:-}/rest/api/2" "/serverInfo" \
+  '"Jira " + .version + " (" + .deploymentType + "), API /rest/api/2"'
+check "Confluence" "${CONFLUENCE_PERSONAL_TOKEN:-}" "${CONFLUENCE_URL:-}/rest/api" "/user/current" \
+  '"přihlášen jako " + (.displayName // .username)'
+# Confluence nemá serverInfo (404) — verze je jen v applinks manifestu, tedy
+# pod JINÝM basem než /rest/api. Proto tu není jeden zadrátovaný prefix.
+check "Confl. verze" "${CONFLUENCE_PERSONAL_TOKEN:-}" "${CONFLUENCE_URL:-}/rest/applinks/1.0" "/manifest" \
+  '"Confluence " + .version + " (build " + (.buildNumber|tostring) + "), API /rest/api"'
+
+echo
+hint() {
+  echo "Nový token: ${JIRA_URL:-?}/secure/ViewProfile.jspa a"
+  echo "            ${CONFLUENCE_URL:-?}/users/viewmyprofile.action → Personal access tokens"
+}
+if [[ $checked -eq 0 ]]; then
+  echo "NIC NEOVĚŘENO — vše přeskočeno ($skipped), v .env nejsou tokeny."
+  echo "Tohle NENÍ potvrzení, že přístup funguje."; hint; exit 2
+elif [[ $failed -gt 0 ]]; then
+  echo "Selhalo $failed z $checked kontrol."; hint; exit 1
+elif [[ $skipped -gt 0 ]]; then
+  echo "Ověřeno $checked, přeskočeno $skipped. Částečný výsledek."; exit 2
+fi
+echo "Vše v pořádku — ověřeno $checked kontrol."

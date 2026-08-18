@@ -13,25 +13,30 @@ Jediná věc, která se tady opakuje. PAT má v Data Center povinnou expiraci
    *Personal access tokens*, [Confluence](https://dory.eon.cz/users/viewmyprofile.action)
    → *Personal access tokens*
 2. Přepiš `JIRA_PERSONAL_TOKEN` / `CONFLUENCE_PERSONAL_TOKEN` v `.env`
-3. `bin/atl-auth-check` — musí dát `rc=0`
+3. `bin/atl-check` — musí dát `rc=0`
 4. Restart Claude Code (MCP čte `.env` při startu)
 
 `rc=2` znamená, že se nic neověřilo, protože chybí token. To není úspěch.
 
 ## Práce
 
-**MCP `atlassian-eon` je default** — čtení i zápis pro obě instance. V Claude
-Code prostě řekni, co chceš. Seznam nástrojů je v `.mcp.json`.
+**Všechno jde přes MCP `atlassian-eon`** — čtení i zápis pro obě instance.
+V Claude Code prostě řekni, co chceš. Seznam nástrojů je v `.mcp.json`.
 
-**REST obálky** jen na to, co MCP neumí. Který endpoint to je a proč, drží
-skill (`references/dc-odchylky.md`).
+V repu je **jediný skript**, `bin/atl-check`: ověří přístup a vypíše verze obou
+instancí. Existuje proto, že MCP se hlásí jako „connected" i s prázdnými tokeny
+a selže až první volání.
+
+Na ad-hoc dotaz nebo smyčku použij curl přímo — ale **token posílej na stdin,
+nikdy přes `-H`**, protože argumenty procesu čte každý lokální proces přes `ps`:
 
 ```bash
-bin/jira-api GET /issue/AIC-1
-bin/jira-api GET '/search?jql=project=AIC&maxResults=0' | jq .total
-bin/jira-api GET @agile/board          # prefix @agile/ přepne na Agile API
-bin/conf-api GET '/space?limit=100&expand=homepage'
+set -a; . .env; set +a
+printf 'header = "Authorization: Bearer %s"\n' "$JIRA_PERSONAL_TOKEN" \
+  | curl -sS -K - --fail-with-body "$JIRA_URL/rest/api/2/serverInfo" | jq .
 ```
+
+Nikdy k tomu nepřidávej `-v`, `-sv`, `--trace` ani `--libcurl` — vypsaly by token.
 
 Proměnné: `ATL_TIMEOUT` (default 30 s), `ATL_ENV_FILE`.
 
@@ -43,9 +48,7 @@ sám.
 ```
 .mcp.json                    MCP atlassian-eon, allowlist 23 nástrojů
 .env / .env.example          tokeny (gitignored, 600) / šablona
-bin/atl-auth-check           ověření PAT proti oběma instancím
-bin/jira-api / bin/conf-api  REST klienti
-bin/_common.sh               auth + atl_curl (token mimo argv, kontrola statusu)
+bin/atl-check                ověření přístupu a verzí obou instancí
 .claude/skills/eon-atlassian/  skill + reference odchylek DC
 ```
 

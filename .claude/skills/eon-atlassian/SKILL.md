@@ -13,7 +13,7 @@ description: Práce s E.ON Jira Data Center (track.eon.cz) a Confluence Data Cen
 Hlavní projekt **AIC**. Tokeny jsou v `.env` (gitignored) — **nikdy je nevypisuj**
 do transkriptu, commitů ani souborů.
 
-## Dvě vrstvy, jednoduché pravidlo
+## Jedna vrstva
 
 **MCP `atlassian-eon` je default** — 19 nástrojů, čtení i zápis pro Jiru
 i Confluence, včetně metadat schématu (`jira_get_create_fields`,
@@ -23,12 +23,17 @@ Linkování issues v allowlistu **není** — kdybys ho potřeboval, musí se p�
 `jira_create_issue_link` i `jira_get_link_types` naráz, jinak jedno bez druhého
 nedává smysl.
 
-**`bin/jira-api` / `bin/conf-api` (REST) použij jen tam, kde MCP nestačí** —
-konkrétní seznam endpointů a limitů je v `references/dc-odchylky.md`. Jinak
-REST nesahej.
+**MCP je jediná cesta.** REST obálky v repu nejsou — jejich jediné unikátní
+odůvodnění (`totalSize` z Confluence) padlo, protože `confluence_search` neumí
+stránkovat: víc než 50 výsledků nedostaneš ani tak, a znát jejich počet ti
+k ničemu není.
 
-`bin/atl-auth-check` ověří přístup k oběma instancím. `rc=2` znamená, že se
-nic nebo jen část ověřila — **to není úspěch**.
+Když opravdu potřebuješ endpoint mimo MCP (smyčka, bulk, `remotelink`, CSV
+export), volej curl přímo podle receptu v `references/dc-odchylky.md` —
+**token na stdin, nikdy přes `-H`**.
+
+Přístup ověříš `bin/atl-check`. `rc=2` znamená, že se nic nebo jen část
+ověřila — **to není úspěch**. Že se MCP hlásí jako „connected", důkaz není.
 
 ## Než začneš zakládat nebo měnit
 
@@ -69,8 +74,9 @@ směrodatný je. MCP odpověď „ok" ověř čtením.
 
 ## Než řekneš „nic tam není" nebo „to je všechno"
 
-Každá vrstva má jiný default limit a jiný způsob, jak zjistit celkový počet —
-tabulka je v `references/dc-odchylky.md`. Nikdy to netvrď z uříznutého výpisu.
+`jira_search` vrací `total` přímo v odpovědi, takže u Jiry to poznáš.
+**U Confluence to poznat nejde** — `confluence_search` má strop 50, nestránkuje
+a počet nevrací. Pokud dostaneš 50 výsledků, řekni „nejméně 50", ne „to je vše".
 
 ## Zápisy nejsou ověřené
 
