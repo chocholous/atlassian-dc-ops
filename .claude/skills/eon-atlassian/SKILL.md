@@ -20,13 +20,12 @@ i Confluence, včetně metadat schématu (`jira_get_create_fields`,
 `jira_get_link_types`, `jira_get_project_components`, `jira_get_project_versions`,
 `jira_get_field_options`).
 
-**`bin/jira-api` / `bin/conf-api` (REST) použij jen ve třech případech:**
+**`bin/jira-api` / `bin/conf-api` (REST) použij jen tam, kde MCP nestačí** —
+konkrétní seznam endpointů a limitů je v `references/dc-odchylky.md`. Jinak
+REST nesahej.
 
-1. endpoint, který MCP nemá — `serverInfo`, `remotelink`, CSV export
-2. `totalSize` z Confluence (MCP `confluence_search` ho nevrací)
-3. bulk nad ~20 objektů, nebo když potřebuješ přesný payload
-
-Jinak REST nesahej. `bin/atl-auth-check` ověří přístup k oběma instancím.
+`bin/atl-auth-check` ověří přístup k oběma instancím. `rc=2` znamená, že se
+nic nebo jen část ověřila — **to není úspěch**.
 
 ## Než začneš zakládat nebo měnit
 
@@ -36,8 +35,8 @@ Povinná pole a povolené hodnoty si vytáhni **živě**, ne z paměti:
 jira_get_create_fields(project_key="AIC", issue_type_id="10003")
 ```
 
-Trvá to ~250 ms a je to jediný zdroj pravdy. Globální `/priority` má 27 hodnot,
-ale pro AIC/Task platí 5 — viz `references/dc-odchylky.md`.
+Trvá to ~250 ms a je to jediný zdroj pravdy. **Globální endpointy jako
+`/priority` lžou o projektu** — proč a o kolik, viz `references/dc-odchylky.md`.
 
 **`transition.id` a `sprint.id` nikdy nehádej ani nepamatuj** — transition závisí
 na aktuálním stavu issue, sprint se mění každé dva týdny. Vždy živě
@@ -54,7 +53,7 @@ Komentář rozešle notifikace a přechod stavu může spustit post-funkce (pře
 uzavření rodiče) — sociálně nevratné, i když technicky ne.
 
 Úprava Confluence stránky je nejrizikovější operace: špatné `id` přepíše cizí
-stránku. Použij `confluence_update_page_section`, ne plný přepis.
+stránku. Ověř `id`, `title` a `space` čtením, než zapíšeš.
 
 ## Po zápisu si to přečti zpět
 
@@ -67,12 +66,8 @@ směrodatný je. MCP odpověď „ok" ověř čtením.
 
 ## Než řekneš „nic tam není" nebo „to je všechno"
 
-Tři vrstvy mají tři různé default limity. `jira_search` vrací `total` přímo.
-Confluence počty jen přes REST:
-
-```bash
-bin/conf-api GET '/search?cql=…&limit=1' | jq .totalSize
-```
+Každá vrstva má jiný default limit a jiný způsob, jak zjistit celkový počet —
+tabulka je v `references/dc-odchylky.md`. Nikdy to netvrď z uříznutého výpisu.
 
 ## Zápisy nejsou ověřené
 
@@ -80,4 +75,3 @@ bin/conf-api GET '/search?cql=…&limit=1' | jq .totalSize
 zakládání issue, komentář, přechod stavu, zápis stránky. AIC je reálný projekt.
 První zápis každého druhu ber jako první běh.
 
-Odchylky DC, které nejdou uhodnout: `references/dc-odchylky.md`.

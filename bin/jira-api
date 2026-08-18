@@ -11,7 +11,6 @@
 #   bin/jira-api GET @agile/board
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
-set -e   # po sourcování, aby ho _common.sh nepřepsal
 
 [[ $# -ge 2 ]] || { usage_from_header "$0"; exit 2; }
 

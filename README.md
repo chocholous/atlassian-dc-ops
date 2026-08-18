@@ -20,11 +20,11 @@ Jediná věc, která se tady opakuje. PAT má v Data Center povinnou expiraci
 
 ## Práce
 
-**MCP `atlassian-eon` je default** — 23 nástrojů, čtení i zápis pro obě
-instance, včetně metadat schématu. V Claude Code prostě řekni, co chceš.
+**MCP `atlassian-eon` je default** — čtení i zápis pro obě instance. V Claude
+Code prostě řekni, co chceš. Seznam nástrojů je v `.mcp.json`.
 
-**REST obálky** jen na to, co MCP neumí: `serverInfo`, `remotelink`, CSV export,
-`totalSize` z Confluence, bulk a přesné payloady.
+**REST obálky** jen na to, co MCP neumí. Který endpoint to je a proč, drží
+skill (`references/dc-odchylky.md`).
 
 ```bash
 bin/jira-api GET /issue/AIC-1
@@ -49,10 +49,9 @@ bin/_common.sh               auth + atl_curl (token mimo argv, kontrola statusu)
 .claude/skills/eon-atlassian/  skill + reference odchylek DC
 ```
 
-## Dvě věci, na které se naráží
+## Pozor
 
-**Oficiální Atlassian `acli` tady nefunguje** — je Cloud-only, jede nad
-`/rest/api/3`, které Data Center nemá. Nainstalovaný je, nepoužívej ho.
+**Oficiální Atlassian `acli` tady nefunguje** — je Cloud-only. Nainstalovaný je,
+nepoužívej ho.
 
-**Zápisy nebyly nikdy ověřené.** Čtení ano, proti oběma instancím. Zápis
-(zakládání, komentáře, přechody stavů, stránky) je zatím jen návrh.
+**Zápisy nebyly nikdy ověřené.** Čtení ano, proti oběma instancím.

@@ -1,18 +1,32 @@
 #!/usr/bin/env bash
 # Funkčně ověří PAT proti oběma instancím. Nic nemění (jen GET).
+#
 # Použití: bin/atl-auth-check
+#
+# Návratové kódy:
+#   0  všechny kontroly proběhly a prošly
+#   1  něco selhalo
+#   2  nic nebo jen část ověřena (chybí token) — TOHLE NENÍ ÚSPĚCH
+#
 # BEZ `set -e` schválně: chceme projít všechny kontroly a posbírat výsledky,
 # ne skončit na první selhané.
 set -uo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 load_env || exit 1
-rc=0
+
 skipped=0
 checked=0
+failed=0
 
+# check <label> <base_url> <token> <path> <jq_filtr_na_popis>
+#
+# HTTP volání jde přes atl_curl z _common.sh — nikoli přes vlastní curl.
+# Dřív tu bylo vlastní volání s `-H "Authorization: Bearer $token"`, což
+# vystavovalo token v argv procesu (měřeno: 1 proces curl s tokenem v `ps`).
+# Sdílená funkce ho posílá na stdin a respektuje ATL_TIMEOUT.
 check() {
-  local label="$1" url="$2" token="$3" path="$4" jq_filter="$5"
+  local label="$1" base="$2" token="$3" path="$4" filter="$5"
   printf '%-14s ' "$label"
 
   if [[ -z "$token" ]]; then
@@ -22,48 +36,47 @@ check() {
   fi
   checked=$((checked + 1))
 
-  local body http
-  body="$(curl -sS -m 25 -w $'\n%{http_code}' \
-      -H "Authorization: Bearer $token" \
-      -H "Accept: application/json" \
-      "${url}${path}" 2>&1)" || { echo "SÍŤOVÁ CHYBA: $body"; return 1; }
+  local body err rc=0
+  err="$(mktemp -t atl_err)"
+  body="$(atl_curl "$base" "$token" GET "$path" 2>"$err")" || rc=$?
 
-  http="$(printf '%s' "$body" | tail -1)"
-  body="$(printf '%s' "$body" | sed '$d')"
+  if [[ $rc -eq 0 ]]; then
+    echo "OK — $(printf '%s' "$body" | jq -r "$filter" 2>/dev/null || echo '(odpověď nelze parsovat)')"
+  else
+    echo "SELHALO"
+    sed 's/^/               /' "$err" >&2      # diagnostika z atl_curl, odsazená
+    failed=$((failed + 1))
+  fi
+  rm -f "$err"
+}
 
-  case "$http" in
-    200)
-      echo "OK (200) — $(printf '%s' "$body" | jq -r "$jq_filter" 2>/dev/null || echo 'odpověď nelze parsovat')"
-      ;;
-    401) echo "SELHALO (401) — token neplatný nebo vypršel"; return 1 ;;
-    403) echo "SELHALO (403) — token platný, ale chybí oprávnění"; return 1 ;;
-    *)   echo "SELHALO ($http) — $(printf '%s' "$body" | head -c 200)"; return 1 ;;
-  esac
+# Vypíše, kde se zakládají nové tokeny. Jedno místo, dva volající.
+token_hint() {
+  echo "Tokeny se vytvářejí ručně ve webovém UI:"
+  echo "  Jira:       ${JIRA_URL:-?}/secure/ViewProfile.jspa → Personal access tokens"
+  echo "  Confluence: ${CONFLUENCE_URL:-?}/users/viewmyprofile.action → Personal access tokens"
 }
 
 echo "=== Ověření přístupu k E.ON Atlassian DC ==="
-check "Jira" "${JIRA_URL:-}" "${JIRA_PERSONAL_TOKEN:-}" \
-  "/rest/api/2/myself" '"přihlášen jako " + (.displayName // .name) + " <" + (.emailAddress // "?") + ">"' || rc=1
-check "Jira verze" "${JIRA_URL:-}" "${JIRA_PERSONAL_TOKEN:-}" \
-  "/rest/api/2/serverInfo" '"Jira " + .version + " (" + .deploymentType + ")"' || rc=1
-check "Confluence" "${CONFLUENCE_URL:-}" "${CONFLUENCE_PERSONAL_TOKEN:-}" \
-  "/rest/api/user/current" '"přihlášen jako " + (.displayName // .username)' || rc=1
+check "Jira" "${JIRA_URL:-}/rest/api/2" "${JIRA_PERSONAL_TOKEN:-}" \
+  "/myself" '"přihlášen jako " + (.displayName // .name) + " <" + (.emailAddress // "?") + ">"'
+check "Jira verze" "${JIRA_URL:-}/rest/api/2" "${JIRA_PERSONAL_TOKEN:-}" \
+  "/serverInfo" '"Jira " + .version + " (" + .deploymentType + ")"'
+check "Confluence" "${CONFLUENCE_URL:-}/rest/api" "${CONFLUENCE_PERSONAL_TOKEN:-}" \
+  "/user/current" '"přihlášen jako " + (.displayName // .username)'
 
 echo
 if [[ $checked -eq 0 ]]; then
   echo "NIC NEOVĚŘENO — všechny kontroly přeskočeny ($skipped), v .env nejsou tokeny."
-  echo "Tohle NENÍ potvrzení, že přístup funguje. Doplň tokeny a spusť znovu:"
-  echo "  Jira:       ${JIRA_URL:-?}/secure/ViewProfile.jspa → Personal Access Tokens"
-  echo "  Confluence: ${CONFLUENCE_URL:-?}/users/viewmyprofile.action → Personal access tokens"
+  echo "Tohle NENÍ potvrzení, že přístup funguje."
+  token_hint
   exit 2
-elif [[ $rc -eq 0 && $skipped -eq 0 ]]; then
-  echo "Vše v pořádku — ověřeno $checked kontrol."
-elif [[ $rc -eq 0 ]]; then
+elif [[ $failed -gt 0 ]]; then
+  echo "Selhalo $failed z $checked kontrol — viz výše."
+  token_hint
+  exit 1
+elif [[ $skipped -gt 0 ]]; then
   echo "Ověřeno $checked kontrol, $skipped přeskočeno (chybí token). Částečný výsledek."
   exit 2
-else
-  echo "Něco selhalo — viz výše. Tokeny se vytvářejí ručně ve UI:"
-  echo "  Jira:       ${JIRA_URL:-?}/secure/ViewProfile.jspa → Personal Access Tokens"
-  echo "  Confluence: ${CONFLUENCE_URL:-?}/users/viewmyprofile.action → Personal access tokens"
 fi
-exit $rc
+echo "Vše v pořádku — ověřeno $checked kontrol."

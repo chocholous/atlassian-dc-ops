@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Sdílené funkce pro atl-* skripty. Není určeno ke spuštění samostatně.
 #
-# ZÁMĚRNĚ tady NENÍ `set -e`. Tenhle soubor se `source`-uje, takže by přepsal
-# nastavení volajícího — `bin/atl-auth-check` chce běžet BEZ -e, aby posbíral
-# výsledky všech kontrol. Kdo -e chce, nastaví si ho po sourcování.
+# Tady NENÍ `set -e`, protože `bin/atl-auth-check` chce běžet bez něj (sbírá
+# výsledky všech kontrol, neskončí na první selhané). `set -uo pipefail`
+# errexit volajícího nijak nemění — ověřeno, přidat sem `-e` by ho ale
+# volajícímu vnutilo, což dřív dělalo.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -51,14 +52,25 @@ atl_curl() {
   local base="$1" token="$2" method="$3" path="$4"
   shift 4
 
-  # -v/--trace* vypíší hlavičku Authorization, tedy token, na výstup.
-  # Ověřený únik → odmítáme.
+  # ALLOWLIST propouštěných přepínačů, ne blacklist zakázaných.
+  # Blacklist tady dřív byl a byl prostupný — změřeno: slepené `-sv` se
+  # nerovná `-v`, takže prošlo a vypsalo hlavičku Authorization s tokenem;
+  # `--libcurl soubor.c` token zapsal na disk. Cokoli, co umí vypsat nebo
+  # uložit požadavek, token vystaví, a vyjmenovat všechny takové přepínače
+  # dopředu nelze. Proto: co není povolené, neprojde.
   local a
   for a in "$@"; do
     case "$a" in
-      -v|--verbose|--trace|--trace-ascii|--trace-all|--trace-config)
-        echo "CHYBA: $a je zakázané — vypsalo by hlavičku Authorization (token)." >&2
+      -d|--data|--data-binary|--data-raw|--data-urlencode) ;;
+      -H|--header|-o|--output|-G|--get|--url-query) ;;
+      -) ;;
+      -*)
+        echo "CHYBA: přepínač $a není povolený." >&2
+        echo "       Propouští se jen: -d/--data*, -H/--header, -o/--output," >&2
+        echo "       -G/--get, --url-query. Ostatní (-v, -sv, --trace*, --libcurl)" >&2
+        echo "       by vypsaly nebo uložily hlavičku Authorization s tokenem." >&2
         return 2 ;;
+      *) ;;   # hodnota předchozího přepínače
     esac
   done
 
@@ -78,7 +90,7 @@ atl_curl() {
     "$@" \
     "${base}${path}" || rc=$?
 
-  status="$(awk 'NR==1{print $2}' "$hdr" 2>/dev/null)"
+  status="$(awk 'NR==1{print $2}' "$hdr")"
   rm -f "$hdr"
 
   if [[ $rc -eq 0 && "${status:-}" == 2* ]]; then
@@ -94,9 +106,10 @@ atl_curl() {
     400) echo "        Payload nebo JQL/CQL odmítnuty — přečti tělo odpovědi." >&2 ;;
     3*)  echo "        Přesměrování: endpoint v této verzi neexistuje (na DC typicky" >&2
          echo "        /rest/api/3 nebo starý tvar createmeta). Tělo NEJSOU data." >&2 ;;
-    404) echo "        Endpoint nebo objekt neexistuje." >&2 ;;
   esac
 
-  [[ $rc -ne 0 ]] && return "$rc"
-  return 22
+  # 3xx: curl uspěl (rc=0), ale tělo nejsou data. Vracíme 22, tedy stejný kód,
+  # jaký dává curl pro chybový HTTP status (CURLE_HTTP_RETURNED_ERROR).
+  (( rc )) || rc=22
+  return "$rc"
 }
