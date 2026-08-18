@@ -32,6 +32,19 @@ Když opravdu potřebuješ endpoint mimo MCP (smyčka, bulk, `remotelink`, CSV
 export), volej curl přímo podle receptu v `references/dc-odchylky.md` —
 **token na stdin, nikdy přes `-H`**.
 
+**Tvar endpointu nehádej — vytáhni ho z připnuté specifikace:**
+
+```bash
+bin/atl-spec jira createmeta          # cesty + metody
+bin/atl-spec jira --show '<cesta>'    # parametry a odpovědi
+bin/atl-spec conf '<vzor>'
+```
+
+Pozor na míru přesnosti: Confluence spec je pro naši verzi (9.2.22), **Jira spec
+je 10.0.5, ale instance běží 10.3.23** — Atlassian pro 10.3.x nic nepublikuje.
+Jádro v2 je stabilní, novější endpointy v tom specu ale chybět mohou. Když spec
+cestu nezná a instance ji přijme, věř instanci.
+
 Přístup ověříš `bin/atl-check`. `rc=2` znamená, že se nic nebo jen část
 ověřila — **to není úspěch**. Že se MCP hlásí jako „connected", důkaz není.
 

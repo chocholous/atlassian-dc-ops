@@ -32,7 +32,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 set -a; . "$ENV_FILE"; set +a
 
-skipped=0; checked=0; failed=0
+skipped=0; checked=0; failed=0; drift=0
+PINS=config/pins.json
+LAST_VER=""
 
 # get <base> <token> <path> → tělo na stdout, nenulový rc na HTTP != 2xx.
 # Token jde curlu konfigurací na stdin (-K -), ne v argv.
@@ -49,9 +51,11 @@ get() {
   return 22
 }
 
-# check <label> <token> <url> <jq_filtr>
+# check <label> <token> <base> <path> <jq_popis> [jq_verze]
+# Když je zadaný 6. argument, uloží z něj verzi do LAST_VER pro porovnání s piny.
 check() {
   printf '%-14s ' "$1"
+  LAST_VER=""
   if [[ -z "$2" ]]; then echo "PŘESKOČENO — token není v .env"; skipped=$((skipped+1)); return; fi
   checked=$((checked+1))
   local body err rc=0
@@ -59,23 +63,40 @@ check() {
   body="$(get "$3" "$2" "$4" 2>"$err")" || rc=$?
   if [[ $rc -eq 0 ]]; then
     echo "OK — $(printf '%s' "$body" | jq -r "$5" 2>/dev/null || echo '(nelze parsovat)')"
+    [[ -n "${6:-}" ]] && LAST_VER="$(printf '%s' "$body" | jq -r "$6" 2>/dev/null)"
   else
     echo "SELHALO"; sed 's/^/               /' "$err" >&2; failed=$((failed+1))
   fi
   rm -f "$err"
 }
 
+# pin_cmp <label> <zjistena_verze> <jq_cesta_v_pins>
+# Tichý drift verze je horší než hlasitá chyba: připnutá specifikace pak
+# popisuje jinou instanci, než na kterou saháš.
+pin_cmp() {
+  [[ -n "$2" && -f "$PINS" ]] || return 0
+  local want; want="$(jq -r "$3" "$PINS" 2>/dev/null)"
+  [[ -n "$want" && "$want" != "null" ]] || return 0
+  if [[ "$2" != "$want" ]]; then
+    printf '%-14s ' "  pin"
+    echo "DRIFT — $1 běží $2, v config/pins.json je $want"
+    drift=$((drift+1))
+  fi
+}
+
 echo "=== E.ON Atlassian DC ==="
 check "Jira" "${JIRA_PERSONAL_TOKEN:-}" "${JIRA_URL:-}/rest/api/2" "/myself" \
   '"přihlášen jako " + (.displayName // .name)'
 check "Jira verze" "${JIRA_PERSONAL_TOKEN:-}" "${JIRA_URL:-}/rest/api/2" "/serverInfo" \
-  '"Jira " + .version + " (" + .deploymentType + "), API /rest/api/2"'
+  '"Jira " + .version + " (" + .deploymentType + "), API /rest/api/2"' '.version'
+pin_cmp "Jira" "$LAST_VER" '.jira.product_version'
 check "Confluence" "${CONFLUENCE_PERSONAL_TOKEN:-}" "${CONFLUENCE_URL:-}/rest/api" "/user/current" \
   '"přihlášen jako " + (.displayName // .username)'
 # Confluence nemá serverInfo (404) — verze je jen v applinks manifestu, tedy
 # pod JINÝM basem než /rest/api. Proto tu není jeden zadrátovaný prefix.
 check "Confl. verze" "${CONFLUENCE_PERSONAL_TOKEN:-}" "${CONFLUENCE_URL:-}/rest/applinks/1.0" "/manifest" \
-  '"Confluence " + .version + " (build " + (.buildNumber|tostring) + "), API /rest/api"'
+  '"Confluence " + .version + " (build " + (.buildNumber|tostring) + "), API /rest/api"' '.version'
+pin_cmp "Confluence" "$LAST_VER" '.confluence.product_version'
 
 echo
 hint() {
@@ -90,4 +111,9 @@ elif [[ $failed -gt 0 ]]; then
 elif [[ $skipped -gt 0 ]]; then
   echo "Ověřeno $checked, přeskočeno $skipped. Částečný výsledek."; exit 2
 fi
-echo "Vše v pořádku — ověřeno $checked kontrol."
+if [[ $drift -gt 0 ]]; then
+  echo "Ověřeno $checked kontrol, ale $drift verze se rozešla s config/pins.json."
+  echo "Aktualizuj piny a přestáhni specifikace: bin/atl-spec fetch"
+  exit 1
+fi
+echo "Vše v pořádku — ověřeno $checked kontrol, verze odpovídají pinům."

@@ -3,3 +3,6 @@
 
 # macOS
 .DS_Store
+
+# Stažené OpenAPI specifikace (Atlassianova díla, necommitují se)
+spec/

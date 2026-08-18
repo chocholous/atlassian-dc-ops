@@ -15,6 +15,10 @@ nebo je nech na MCP nástrojích, které mají vlastní schémata.
 Agile API (boardy, sprinty) je pod `/rest/agile/1.0` — ale to všechno pokrývá MCP
 (`jira_get_agile_boards`, `jira_get_sprints_from_board`, `jira_get_sprint_issues`).
 
+Potvrzeno dvěma nezávislými zdroji: probe instance vrací na `/rest/api/3` 302,
+a Atlassianova vlastní specifikace pro DC má **0 cest** pod `/api/3` a 252 pod
+`/api/2` (`bin/atl-spec jira '^/api/3'`).
+
 ## Jira 10 zrušila starý createmeta
 
 ```bash

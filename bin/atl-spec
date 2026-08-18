@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Připnutá OpenAPI specifikace obou instancí — stažení, ověření, dotazování.
+#
+# Použití:
+#   bin/atl-spec fetch              stáhne obě specifikace a ověří sha256
+#   bin/atl-spec jira createmeta    vypíše cesty odpovídající vzoru + metody
+#   bin/atl-spec conf 'content/.*child'
+#   bin/atl-spec jira --show /api/2/issue/createmeta/{projectIdOrKey}/issuetypes
+#
+# Proč skript a ne jen odkaz: specifikace mají 285 a 122 cest, dohromady
+# skoro 1 MB JSONu. Číst je celé nemá smysl — tohle z nich udělá dotaz.
+#
+# Specifikace se NEcommitují. Jsou to Atlassianova autorská díla; repo drží
+# jen URL, verzi a sha256 v config/pins.json a stahuje je do spec/,
+# které je gitignorované.
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+PINS=config/pins.json
+DIR=spec
+
+[[ -f "$PINS" ]] || { echo "CHYBA: chybí $PINS" >&2; exit 1; }
+command -v jq >/dev/null || { echo "CHYBA: chybí jq" >&2; exit 1; }
+
+key_for() { case "$1" in jira) echo jira ;; conf|confluence) echo confluence ;; *) return 1 ;; esac; }
+file_for() { echo "$DIR/$(key_for "$1").swagger.json"; }
+
+fetch_one() {
+  local k="$1" url sha want out
+  url="$(jq -r ".$k.spec.url" "$PINS")"
+  want="$(jq -r ".$k.spec.sha256" "$PINS")"
+  out="$DIR/$k.swagger.json"
+  mkdir -p "$DIR"
+  printf '  %-11s ' "$k"
+  if ! curl -sSL --fail -m 120 -o "$out" "$url"; then echo "STAŽENÍ SELHALO"; return 1; fi
+  sha="$(shasum -a 256 "$out" | cut -d' ' -f1)"
+  if [[ "$sha" != "$want" ]]; then
+    echo "SHA256 NESOUHLASÍ — specifikace se na serveru změnila"
+    echo "      čekáno: $want" >&2
+    echo "      dostal: $sha" >&2
+    echo "      Zkontroluj změnu a teprve pak aktualizuj $PINS." >&2
+    return 1
+  fi
+  echo "OK  $(jq -r '.paths|length' "$out") cest, sha256 souhlasí ($(jq -r ".spec.version" <<<"$(jq ".$k" "$PINS")"))"
+}
+
+case "${1:-}" in
+  fetch)
+    echo "=== Stahování připnutých specifikací ==="
+    rc=0; fetch_one jira || rc=1; fetch_one confluence || rc=1
+    exit $rc ;;
+  jira|conf|confluence)
+    k="$(key_for "$1")"; f="$DIR/$k.swagger.json"
+    [[ -f "$f" ]] || { echo "CHYBA: $f není stažený — spusť: bin/atl-spec fetch" >&2; exit 1; }
+    if [[ "${2:-}" == "--show" ]]; then
+      jq --arg p "${3:?--show vyžaduje cestu}" '.paths[$p] // "cesta ve specu není"' "$f"
+    else
+      pat="${2:-.}"
+      jq -r --arg p "$pat" '
+        .paths | to_entries[] | select(.key | test($p; "i"))
+        | "\(.key)\t[\([.value | to_entries[] | .key | ascii_upcase] | join(" "))]"' "$f" \
+        | sort | column -t -s$'\t'
+    fi ;;
+  *) awk 'NR==1{next} /^#/ {sub(/^# ?/,""); print; next} {exit}' "$0"; exit 2 ;;
+esac
