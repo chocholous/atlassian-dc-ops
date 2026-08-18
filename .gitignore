@@ -1,0 +1,13 @@
+# Tajemství — NIKDY necommitovat
+.env
+.env.local
+*.pat
+*.token
+secrets/
+
+# jira-cli lokální stav a config (obsahuje login a cache schématu)
+.jira/
+config/jira-cli.yml
+
+# macOS
+.DS_Store

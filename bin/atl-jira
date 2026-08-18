@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Wrapper nad jira-cli, který ho nasměruje na E.ON Jira DC pomocí PAT z .env.
+#
+# Proč wrapper: jira-cli čte token z JIRA_API_TOKEN a config z globálního
+# ~/.config/.jira/.config.yml. Wrapper místo toho použije config v tomhle repu
+# a token z .env, takže repo je samostatné a nešahá ti do globálního nastavení.
+#
+# První spuštění (jednorázová inicializace):
+#   bin/atl-jira init --installation local --server https://track.eon.cz \
+#       --login <tvuj-jira-username> --auth-type bearer --project AIC
+#
+# Běžné použití:
+#   bin/atl-jira issue list -q 'project=AIC AND statusCategory != Done'
+#   bin/atl-jira issue view AIC-1
+#   bin/atl-jira sprint list
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+set -e   # po sourcování, aby ho _common.sh nepřepsal
+
+load_env
+require_var JIRA_PERSONAL_TOKEN
+
+export JIRA_AUTH_TYPE=bearer
+export JIRA_API_TOKEN="$JIRA_PERSONAL_TOKEN"
+export JIRA_CONFIG_FILE="${JIRA_CONFIG_FILE:-$REPO_ROOT/config/jira-cli.yml}"
+
+exec jira "$@"

@@ -1,0 +1,1054 @@
+{
+  "_comment": "Generováno bin/atl-discover. Needituj ručně — spusť skript znovu. Tokeny NIKDY sem.",
+  "_discovered": "2026-08-18",
+  "me": {
+    "jira_name": "Chocho@vorian.cz",
+    "jira_display": "Chocholouš Pavel",
+    "confluence_username": "Chocho@vorian.cz"
+  },
+  "jira": {
+    "_discovered": "2026-08-18",
+    "_sources": [
+      "/project/{k}/statuses",
+      "/project/{k}",
+      "/issueLinkType",
+      "/rest/agile/1.0/board",
+      "/issue/createmeta/{k}/issuetypes/{id}",
+      "/issue/{key}/editmeta"
+    ],
+    "_max_allowed": 50,
+    "project": "AIC",
+    "issue_types": [
+      {
+        "id": "10003",
+        "name": "Task",
+        "statuses": [
+          "To Do",
+          "In Progress",
+          "Done"
+        ]
+      },
+      {
+        "id": "10000",
+        "name": "Sub-task",
+        "statuses": [
+          "To Do",
+          "In Progress",
+          "Done"
+        ]
+      },
+      {
+        "id": "10002",
+        "name": "Story",
+        "statuses": [
+          "To Do",
+          "In Progress",
+          "Done"
+        ]
+      },
+      {
+        "id": "10004",
+        "name": "Bug",
+        "statuses": [
+          "To Do",
+          "In Progress",
+          "Done"
+        ]
+      },
+      {
+        "id": "10001",
+        "name": "Epic",
+        "statuses": [
+          "To Do",
+          "In Progress",
+          "Done"
+        ]
+      }
+    ],
+    "components": [],
+    "versions": [],
+    "link_types": [
+      "Blocks",
+      "Cloners",
+      "Defect",
+      "Duplicate",
+      "Link (PO, DMS, Splunk)",
+      "Parent",
+      "Realize",
+      "Relates",
+      "Rozdělení požadavku",
+      "Tests"
+    ],
+    "boards": [
+      {
+        "id": 1372,
+        "name": "AIC board",
+        "type": "scrum"
+      },
+      {
+        "id": 1373,
+        "name": "AIC Canban",
+        "type": "kanban"
+      }
+    ],
+    "create": [
+      {
+        "type": "Task",
+        "type_id": "10003",
+        "required": [
+          "summary",
+          "issuetype",
+          "reporter",
+          "project"
+        ],
+        "fields": [
+          {
+            "id": "summary",
+            "name": "Summary",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuetype",
+            "name": "Issue Type",
+            "required": true,
+            "schema": "issuetype",
+            "allowed": [
+              "Task"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "reporter",
+            "name": "Reporter",
+            "required": true,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "components",
+            "name": "Component/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "description",
+            "name": "Description",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "fixVersions",
+            "name": "Fix Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "priority",
+            "name": "Priority",
+            "required": false,
+            "schema": "priority",
+            "allowed": [
+              "Highest",
+              "High",
+              "Medium",
+              "Low",
+              "Lowest"
+            ],
+            "allowed_total": 5,
+            "allowed_truncated": false
+          },
+          {
+            "id": "labels",
+            "name": "Labels",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "attachment",
+            "name": "Attachment",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuelinks",
+            "name": "Linked Issues",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10000",
+            "name": "Epic Link",
+            "required": false,
+            "schema": "any",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10004",
+            "name": "Sprint",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "assignee",
+            "name": "Assignee",
+            "required": false,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "project",
+            "name": "Project",
+            "required": true,
+            "schema": "project",
+            "allowed": [
+              "AI Claude"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          }
+        ]
+      },
+      {
+        "type": "Sub-task",
+        "type_id": "10000",
+        "required": [
+          "summary",
+          "issuetype",
+          "reporter",
+          "project",
+          "parent"
+        ],
+        "fields": [
+          {
+            "id": "summary",
+            "name": "Summary",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuetype",
+            "name": "Issue Type",
+            "required": true,
+            "schema": "issuetype",
+            "allowed": [
+              "Sub-task"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "reporter",
+            "name": "Reporter",
+            "required": true,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "components",
+            "name": "Component/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "description",
+            "name": "Description",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "fixVersions",
+            "name": "Fix Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "priority",
+            "name": "Priority",
+            "required": false,
+            "schema": "priority",
+            "allowed": [
+              "Highest",
+              "High",
+              "Medium",
+              "Low",
+              "Lowest"
+            ],
+            "allowed_total": 5,
+            "allowed_truncated": false
+          },
+          {
+            "id": "labels",
+            "name": "Labels",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "attachment",
+            "name": "Attachment",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuelinks",
+            "name": "Linked Issues",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10000",
+            "name": "Epic Link",
+            "required": false,
+            "schema": "any",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10004",
+            "name": "Sprint",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "assignee",
+            "name": "Assignee",
+            "required": false,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "project",
+            "name": "Project",
+            "required": true,
+            "schema": "project",
+            "allowed": [
+              "AI Claude"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "parent",
+            "name": "Parent",
+            "required": true,
+            "schema": "issuelink",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          }
+        ]
+      },
+      {
+        "type": "Story",
+        "type_id": "10002",
+        "required": [
+          "summary",
+          "issuetype",
+          "reporter",
+          "project"
+        ],
+        "fields": [
+          {
+            "id": "summary",
+            "name": "Summary",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuetype",
+            "name": "Issue Type",
+            "required": true,
+            "schema": "issuetype",
+            "allowed": [
+              "Story"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "reporter",
+            "name": "Reporter",
+            "required": true,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "components",
+            "name": "Component/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "description",
+            "name": "Description",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "fixVersions",
+            "name": "Fix Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "priority",
+            "name": "Priority",
+            "required": false,
+            "schema": "priority",
+            "allowed": [
+              "Highest",
+              "High",
+              "Medium",
+              "Low",
+              "Lowest"
+            ],
+            "allowed_total": 5,
+            "allowed_truncated": false
+          },
+          {
+            "id": "labels",
+            "name": "Labels",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "attachment",
+            "name": "Attachment",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuelinks",
+            "name": "Linked Issues",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10000",
+            "name": "Epic Link",
+            "required": false,
+            "schema": "any",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10004",
+            "name": "Sprint",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "assignee",
+            "name": "Assignee",
+            "required": false,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "project",
+            "name": "Project",
+            "required": true,
+            "schema": "project",
+            "allowed": [
+              "AI Claude"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          }
+        ]
+      },
+      {
+        "type": "Bug",
+        "type_id": "10004",
+        "required": [
+          "summary",
+          "issuetype",
+          "reporter",
+          "project"
+        ],
+        "fields": [
+          {
+            "id": "summary",
+            "name": "Summary",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuetype",
+            "name": "Issue Type",
+            "required": true,
+            "schema": "issuetype",
+            "allowed": [
+              "Bug"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "reporter",
+            "name": "Reporter",
+            "required": true,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "components",
+            "name": "Component/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "description",
+            "name": "Description",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "fixVersions",
+            "name": "Fix Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "priority",
+            "name": "Priority",
+            "required": false,
+            "schema": "priority",
+            "allowed": [
+              "Highest",
+              "High",
+              "Medium",
+              "Low",
+              "Lowest"
+            ],
+            "allowed_total": 5,
+            "allowed_truncated": false
+          },
+          {
+            "id": "labels",
+            "name": "Labels",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "environment",
+            "name": "Environment",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "attachment",
+            "name": "Attachment",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "versions",
+            "name": "Affects Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuelinks",
+            "name": "Linked Issues",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10000",
+            "name": "Epic Link",
+            "required": false,
+            "schema": "any",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10004",
+            "name": "Sprint",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "assignee",
+            "name": "Assignee",
+            "required": false,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "project",
+            "name": "Project",
+            "required": true,
+            "schema": "project",
+            "allowed": [
+              "AI Claude"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          }
+        ]
+      },
+      {
+        "type": "Epic",
+        "type_id": "10001",
+        "required": [
+          "customfield_10002",
+          "summary",
+          "issuetype",
+          "reporter",
+          "project"
+        ],
+        "fields": [
+          {
+            "id": "customfield_10002",
+            "name": "Epic Name",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "summary",
+            "name": "Summary",
+            "required": true,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuetype",
+            "name": "Issue Type",
+            "required": true,
+            "schema": "issuetype",
+            "allowed": [
+              "Epic"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          },
+          {
+            "id": "reporter",
+            "name": "Reporter",
+            "required": true,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "components",
+            "name": "Component/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "description",
+            "name": "Description",
+            "required": false,
+            "schema": "string",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "fixVersions",
+            "name": "Fix Version/s",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "priority",
+            "name": "Priority",
+            "required": false,
+            "schema": "priority",
+            "allowed": [
+              "Highest",
+              "High",
+              "Medium",
+              "Low",
+              "Lowest"
+            ],
+            "allowed_total": 5,
+            "allowed_truncated": false
+          },
+          {
+            "id": "labels",
+            "name": "Labels",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "attachment",
+            "name": "Attachment",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "issuelinks",
+            "name": "Linked Issues",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10000",
+            "name": "Epic Link",
+            "required": false,
+            "schema": "any",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "customfield_10004",
+            "name": "Sprint",
+            "required": false,
+            "schema": "array",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "assignee",
+            "name": "Assignee",
+            "required": false,
+            "schema": "user",
+            "allowed": [],
+            "allowed_total": 0,
+            "allowed_truncated": false
+          },
+          {
+            "id": "project",
+            "name": "Project",
+            "required": true,
+            "schema": "project",
+            "allowed": [
+              "AI Claude"
+            ],
+            "allowed_total": 1,
+            "allowed_truncated": false
+          }
+        ]
+      }
+    ],
+    "edit": {
+      "sample_issue": "AIC-1",
+      "fields": [
+        {
+          "id": "customfield_10002",
+          "name": "Epic Name",
+          "required": true,
+          "allowed": []
+        },
+        {
+          "id": "summary",
+          "name": "Summary",
+          "required": true,
+          "allowed": []
+        },
+        {
+          "id": "issuetype",
+          "name": "Issue Type",
+          "required": true,
+          "allowed": [
+            "Task",
+            "Story",
+            "Bug",
+            "Epic"
+          ]
+        },
+        {
+          "id": "components",
+          "name": "Component/s",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "description",
+          "name": "Description",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "fixVersions",
+          "name": "Fix Version/s",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "priority",
+          "name": "Priority",
+          "required": false,
+          "allowed": [
+            "Highest",
+            "High",
+            "Medium",
+            "Low",
+            "Lowest"
+          ]
+        },
+        {
+          "id": "labels",
+          "name": "Labels",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "attachment",
+          "name": "Attachment",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "issuelinks",
+          "name": "Linked Issues",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "customfield_10000",
+          "name": "Epic Link",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "customfield_10004",
+          "name": "Sprint",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "assignee",
+          "name": "Assignee",
+          "required": false,
+          "allowed": []
+        },
+        {
+          "id": "comment",
+          "name": "Comment",
+          "required": false,
+          "allowed": []
+        }
+      ]
+    },
+    "not_stored": {
+      "transition_ids": "závisí na aktuálním stavu issue → /issue/{key}/transitions živě",
+      "sprint_ids": "mění se každé dva týdny → /rest/agile/1.0/board/{id}/sprint živě"
+    }
+  },
+  "confluence": {
+    "_discovered": "2026-08-18",
+    "_sources": [
+      "/rest/api/space?expand=homepage (se stránkováním)"
+    ],
+    "spaces": [
+      {
+        "key": "EMDWH",
+        "name": "ADAM - Energy Markets DWH",
+        "type": "global",
+        "homepage_id": "194513088",
+        "homepage_title": "ADAM - Energy Markets DWH Home"
+      },
+      {
+        "key": "ISUCRM",
+        "name": "Azure - ECE SAP ISU/CRM migrace",
+        "type": "global",
+        "homepage_id": "183930507",
+        "homepage_title": "Azure - ECE SAP ISU/CRM migrace Home"
+      },
+      {
+        "key": "CLOUDTREQ",
+        "name": "BICZ Infrastructure Requests",
+        "type": "global",
+        "homepage_id": "12418262",
+        "homepage_title": "BICZ Infrastructure Requests Home"
+      },
+      {
+        "key": "CHAMM",
+        "name": "Chammeleon",
+        "type": "global",
+        "homepage_id": "81995944",
+        "homepage_title": "Chammeleon"
+      },
+      {
+        "key": "UXUI",
+        "name": "E.ON UX/UI Design",
+        "type": "global",
+        "homepage_id": "179934214",
+        "homepage_title": "E.ON UX/UI Design Home"
+      },
+      {
+        "key": "SAC",
+        "name": "Plánování a reporting v SAC",
+        "type": "global",
+        "homepage_id": "111083903",
+        "homepage_title": "Plánování a reporting v SAC Home"
+      }
+    ],
+    "notes": {
+      "homepage_id": "cíl pro nové stránky — ancestors[0].id při POST /content",
+      "write": "úpravu preferuj sekční (confluence_update_page_section), ne plný PUT"
+    }
+  },
+  "identity": {
+    "_discovered": "2026-08-18",
+    "_sources": [
+      "/rest/api/2/myself",
+      "/rest/api/2/serverInfo",
+      "/rest/api/user/current",
+      "/rest/applinks/1.0/manifest"
+    ],
+    "jira_name": "Chocho@vorian.cz",
+    "jira_display": "Chocholouš Pavel",
+    "confluence_username": "Chocho@vorian.cz",
+    "jira_version": "10.3.23",
+    "jira_deployment": "Server",
+    "confluence_version": "9.2.22",
+    "confluence_server_id": "84bb0dbd-0470-3da3-ad97-3b7591ba4fdb",
+    "notes": {
+      "api": "Jira /rest/api/2 (v3 NEEXISTUJE, 302 na login). Confluence /rest/api.",
+      "server_id": "confluence_server_id je potřeba pro Jira makro na stránce."
+    }
+  },
+  "_schema": 2
+}

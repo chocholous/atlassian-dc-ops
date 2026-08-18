@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Tenký klient nad Jira Data Center REST API v2.
+#
+# Použití:
+#   bin/jira-api GET /myself
+#   bin/jira-api GET '/search?jql=project=AIC+AND+statusCategory!=Done&maxResults=20'
+#   bin/jira-api GET /issue/AIC-1
+#   bin/jira-api POST /issue -d @payload.json
+#
+# Cesta se připojuje za /rest/api/2 (pro Agile API použij prefix @agile).
+#   bin/jira-api GET @agile/board
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+set -e   # po sourcování, aby ho _common.sh nepřepsal
+
+[[ $# -ge 2 ]] || { usage_from_header "$0"; exit 2; }
+
+load_env
+require_var JIRA_URL
+require_var JIRA_PERSONAL_TOKEN
+
+method="$1"; path="$2"; shift 2
+
+if [[ "$path" == @agile/* ]]; then
+  api_base="/rest/agile/1.0"
+  path="/${path#@agile/}"
+else
+  api_base="/rest/api/2"
+  [[ "$path" == /* ]] || path="/$path"
+fi
+
+atl_curl "${JIRA_URL}${api_base}" "$JIRA_PERSONAL_TOKEN" "$method" "$path" "$@"

@@ -1,0 +1,254 @@
+#!/usr/bin/env bash
+# Zjistí metadata obou instancí a uloží je do config/instances.json.
+#
+# Discovery je cache, která umí poznat, že je neplatná. Ukládá se po sekcích,
+# každá s vlastním datem a seznamem endpointů, ze kterých vznikla — takže je
+# poznat, co zestaralo, a dá se obnovit jen dotčená část.
+#
+# Použití:
+#   bin/atl-discover                      # obnoví všechny sekce
+#   bin/atl-discover --check              # nic nezapíše, jen nahlásí drift (rc=3)
+#   bin/atl-discover --section jira       # obnoví jen jednu sekci a sloučí
+#   bin/atl-discover --dry-run            # vypíše výsledek, nezapíše
+#
+# Sekce: identity | jira | confluence
+#
+# ULOŽENÉ hodnoty jsou jen ty, které se nemění po dnech. Záměrně se NEUKLÁDÁ:
+#   transition.id  — závisí na aktuálním stavu issue, uložená hodnota by lhala
+#   sprint.id      — mění se každé dva týdny (board id ano)
+#   počty issues   — to je dotaz, ne konfigurace
+set -uo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+set -e
+
+# Discovery sama volá atl_curl. Bez tohohle by selhání uvnitř discovery
+# spustilo samoléčení, které spustí discovery → nekonečná rekurze.
+export ATL_SELFHEAL=0
+
+MODE=refresh
+SECTIONS="identity jira confluence"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check)   MODE=check ;;
+    --dry-run) MODE=dryrun ;;
+    --section) SECTIONS="${2:?--section vyžaduje jméno sekce}"; shift ;;
+    -h|--help) usage_from_header "$0"; exit 0 ;;
+    *) echo "CHYBA: neznámý argument $1" >&2; usage_from_header "$0"; exit 2 ;;
+  esac
+  shift
+done
+
+require_tools curl jq mktemp diff
+load_env
+require_var JIRA_URL; require_var JIRA_PERSONAL_TOKEN
+require_var CONFLUENCE_URL; require_var CONFLUENCE_PERSONAL_TOKEN
+
+OUT="$REPO_ROOT/config/instances.json"
+TODAY="$(date +%F)"
+PROJECT="${ATL_PROJECT:-AIC}"
+# Strop povolených hodnot na jedno pole. Bez něj by jeden select s tisíci
+# položkami nafoukl config. Při překročení se to označí allowed_truncated.
+MAX_ALLOWED="${ATL_MAX_ALLOWED:-50}"
+
+tmp="$(mktemp -d -t atl_disc)"; trap 'rm -rf "$tmp"' EXIT
+
+j()  { atl_curl "${JIRA_URL}/rest/api/2"      "$JIRA_PERSONAL_TOKEN"       GET "$1"; }
+ja() { atl_curl "${JIRA_URL}/rest/agile/1.0"  "$JIRA_PERSONAL_TOKEN"       GET "$1"; }
+c()  { atl_curl "${CONFLUENCE_URL}/rest/api"  "$CONFLUENCE_PERSONAL_TOKEN" GET "$1"; }
+
+step() { local n=$(( 40 - ${#1} )); printf '  %s' "$1"; (( n > 0 )) && printf '%*s' "$n" '' || true; }
+
+# ---------------------------------------------------------------- identity
+build_identity() {
+  step "Jira: identita"; j /myself > "$tmp/myself.json" && echo OK
+  step "Jira: verze"; j /serverInfo > "$tmp/server.json" && echo OK
+  step "Confluence: identita"; c /user/current > "$tmp/cuser.json" && echo OK
+  step "Confluence: manifest"
+  if atl_curl "${CONFLUENCE_URL}/rest/applinks/1.0" "$CONFLUENCE_PERSONAL_TOKEN" \
+       GET /manifest > "$tmp/mani.json" 2>/dev/null; then echo OK
+  else echo "PŘESKOČENO"; echo '{}' > "$tmp/mani.json"; fi
+
+  jq -n --arg d "$TODAY" \
+    --slurpfile m "$tmp/myself.json" --slurpfile s "$tmp/server.json" \
+    --slurpfile cu "$tmp/cuser.json" --slurpfile ma "$tmp/mani.json" '{
+    _discovered: $d,
+    _sources: ["/rest/api/2/myself","/rest/api/2/serverInfo",
+               "/rest/api/user/current","/rest/applinks/1.0/manifest"],
+    jira_name: ($m[0].name // null),
+    jira_display: ($m[0].displayName // null),
+    confluence_username: ($cu[0].username // $cu[0].user.username // null),
+    jira_version: ($s[0].version // null),
+    jira_deployment: ($s[0].deploymentType // null),
+    confluence_version: ($ma[0].version // null),
+    confluence_server_id: ($ma[0].id // null),
+    notes: {
+      api: "Jira /rest/api/2 (v3 NEEXISTUJE, 302 na login). Confluence /rest/api.",
+      server_id: "confluence_server_id je potřeba pro Jira makro na stránce."
+    }
+  }' > "$tmp/sec_identity.json"
+}
+
+# -------------------------------------------------------------------- jira
+build_jira() {
+  step "Jira: typy úkolů v $PROJECT"; j "/project/$PROJECT/statuses" > "$tmp/types.json" && echo OK
+  step "Jira: projekt (komponenty, verze)"; j "/project/$PROJECT" > "$tmp/proj.json" && echo OK
+  step "Jira: typy linků"; j /issueLinkType > "$tmp/links.json" && echo OK
+  step "Jira: boardy"
+  if ja "/board?projectKeyOrId=$PROJECT" > "$tmp/boards.json"; then echo OK
+  else echo "PŘESKOČENO"; echo '{"values":[]}' > "$tmp/boards.json"; fi
+
+  # createmeta: v Jiře 10 jen per typ úkolu (starý tvar s ?projectKeys= dává 404)
+  step "Jira: createmeta per typ"
+  : > "$tmp/cm.ndjson"; ok=0
+  while IFS=$'\t' read -r tid tname; do
+    [[ -n "$tid" ]] || continue
+    if j "/issue/createmeta/$PROJECT/issuetypes/$tid" > "$tmp/one.json" 2>/dev/null; then
+      jq -c --arg id "$tid" --arg n "$tname" --argjson cap "$MAX_ALLOWED" '{
+        type: $n, type_id: $id,
+        required: [.values[] | select(.required) | .fieldId],
+        fields: [.values[] | {
+          id: .fieldId, name: .name, required: .required,
+          schema: (.schema.type // null),
+          allowed: [(.allowedValues // [])[] | (.name // .value // .id)][0:$cap],
+          allowed_total: ((.allowedValues // []) | length),
+          allowed_truncated: (((.allowedValues // []) | length) > $cap)
+        }]
+      }' "$tmp/one.json" >> "$tmp/cm.ndjson"
+      ok=$((ok+1))
+    fi
+  done < <(jq -r '.[] | "\(.id)\t\(.name)"' "$tmp/types.json")
+  echo "OK ($ok typů)"
+
+  # editmeta: editovatelná pole se LIŠÍ od zakládacích. Bere se ze vzorku issue.
+  step "Jira: editmeta (vzorek issue)"
+  sample="$(j "/search?jql=project=$PROJECT+ORDER+BY+created+ASC&maxResults=1&fields=key" \
+            | jq -r '.issues[0].key // empty')"
+  if [[ -n "$sample" ]] && j "/issue/$sample/editmeta" > "$tmp/em.json" 2>/dev/null; then
+    jq -c --arg k "$sample" --argjson cap "$MAX_ALLOWED" '{
+      sample_issue: $k,
+      fields: [.fields | to_entries[] | {
+        id: .key, name: .value.name, required: .value.required,
+        allowed: [(.value.allowedValues // [])[] | (.name // .value // .id)][0:$cap]
+      }]
+    }' "$tmp/em.json" > "$tmp/editmeta.json"
+    echo "OK ($sample)"
+  else
+    echo "PŘESKOČENO (v projektu není issue)"; echo 'null' > "$tmp/editmeta.json"
+  fi
+
+  jq -n --arg d "$TODAY" --arg p "$PROJECT" --argjson cap "$MAX_ALLOWED" \
+    --slurpfile t "$tmp/types.json" --slurpfile pr "$tmp/proj.json" \
+    --slurpfile l "$tmp/links.json" --slurpfile b "$tmp/boards.json" \
+    --slurpfile em "$tmp/editmeta.json" --rawfile cm "$tmp/cm.ndjson" '{
+    _discovered: $d,
+    _sources: ["/project/{k}/statuses","/project/{k}","/issueLinkType",
+               "/rest/agile/1.0/board","/issue/createmeta/{k}/issuetypes/{id}",
+               "/issue/{key}/editmeta"],
+    _max_allowed: $cap,
+    project: $p,
+    issue_types: [$t[0][] | {id, name, statuses: [.statuses[]? | .name]}],
+    components: [$pr[0].components[]? | .name],
+    versions: [$pr[0].versions[]? | .name],
+    link_types: [$l[0].issueLinkTypes[]? | .name],
+    boards: [$b[0].values[]? | {id, name, type}],
+    create: [$cm | split("\n")[] | select(length>0) | fromjson],
+    edit: $em[0],
+    not_stored: {
+      transition_ids: "závisí na aktuálním stavu issue → /issue/{key}/transitions živě",
+      sprint_ids: "mění se každé dva týdny → /rest/agile/1.0/board/{id}/sprint živě"
+    }
+  }' > "$tmp/sec_jira.json"
+}
+
+# -------------------------------------------------------------- confluence
+build_confluence() {
+  step "Confluence: spaces + homepage"
+  : > "$tmp/spaces.ndjson"; start=0
+  while :; do
+    c "/space?limit=100&start=$start&expand=homepage" > "$tmp/sp.json" || break
+    jq -c '.results[]? | {key, name, type, homepage_id: (.homepage.id // null),
+                          homepage_title: (.homepage.title // null)}' \
+       "$tmp/sp.json" >> "$tmp/spaces.ndjson"
+    n="$(jq -r '.results | length' "$tmp/sp.json")"
+    [[ "$n" -lt 100 ]] && break
+    start=$((start + 100))
+  done
+  echo "OK ($(wc -l < "$tmp/spaces.ndjson" | tr -d ' ') spaces)"
+
+  jq -n --arg d "$TODAY" --rawfile sp "$tmp/spaces.ndjson" '{
+    _discovered: $d,
+    _sources: ["/rest/api/space?expand=homepage (se stránkováním)"],
+    spaces: [$sp | split("\n")[] | select(length>0) | fromjson],
+    notes: {
+      homepage_id: "cíl pro nové stránky — ancestors[0].id při POST /content",
+      write: "úpravu preferuj sekční (confluence_update_page_section), ne plný PUT"
+    }
+  }' > "$tmp/sec_confluence.json"
+}
+
+# ---------------------------------------------------------------- sestaveni
+echo "=== Discovery E.ON Atlassian DC ($TODAY, projekt $PROJECT, režim $MODE) ==="
+for s in $SECTIONS; do
+  case "$s" in
+    identity)   build_identity ;;
+    jira)       build_jira ;;
+    confluence) build_confluence ;;
+    *) echo "CHYBA: neznámá sekce '$s' (identity|jira|confluence)" >&2; exit 2 ;;
+  esac
+done
+
+# Slouceni do existujiciho souboru: obnovuji se JEN dotcene sekce
+base='{"_schema":2,"_comment":"Generováno bin/atl-discover. Needituj ručně. Tokeny NIKDY sem."}'
+[[ -f "$OUT" ]] && base="$(cat "$OUT")"
+merged="$tmp/merged.json"
+printf '%s' "$base" > "$merged"
+for s in $SECTIONS; do
+  jq --arg k "$s" --slurpfile v "$tmp/sec_$s.json" '.[$k] = $v[0]' "$merged" > "$tmp/m2" \
+    && command mv "$tmp/m2" "$merged"
+done
+jq '._schema = 2' "$merged" > "$tmp/m3" && command mv "$tmp/m3" "$merged"
+
+strip() { jq -S 'walk(if type=="object" then del(._discovered) else . end)' "$1"; }
+
+case "$MODE" in
+  dryrun)
+    echo; echo "--- DRY RUN, nic nezapsáno ---"; jq . "$merged" ;;
+  check)
+    echo
+    if [[ ! -f "$OUT" ]]; then
+      echo "DRIFT: config/instances.json neexistuje — spusť bez --check."; exit 3
+    fi
+    if diff -u <(strip "$OUT") <(strip "$merged") > "$tmp/d.diff"; then
+      echo "Bez driftu — uložené schéma odpovídá instancím."
+      jq -r 'to_entries[] | select(.value | type == "object")
+             | select(.value._discovered) | "  \(.key): zjištěno \(.value._discovered)"' "$OUT"
+      exit 0
+    else
+      echo "DRIFT ZJIŠTĚN — uložené schéma se rozešlo s instancemi:"
+      echo
+      rg '^[+-][^+-]' "$tmp/d.diff" | head -40 || true
+      echo
+      echo "Nic nebylo zapsáno. Obnov příkazem:  bin/atl-discover --section <sekce>"
+      exit 3
+    fi ;;
+  refresh)
+    if [[ -f "$OUT" ]] && diff -q <(strip "$OUT") <(strip "$merged") >/dev/null; then
+      changed="bez věcné změny"
+    else
+      changed="SCHÉMA SE ZMĚNILO"
+    fi
+    command cp "$merged" "$OUT"
+    echo; echo "Zapsáno do config/instances.json ($changed)"
+    jq -r '
+      (.identity // {}) as $i | (.jira // {}) as $j | (.confluence // {}) as $c |
+      "  já v Jiře:          \($i.jira_name // "?")",
+      "  Jira:               \($i.jira_version // "?") (\($i.jira_deployment // "?"))",
+      "  Confluence:         \($i.confluence_version // "?")",
+      "  typů úkolů:         \(($j.issue_types // []) | length)",
+      "  boardů:             \(($j.boards // []) | length)",
+      "  typů linků:         \(($j.link_types // []) | length)",
+      "  createmeta typů:    \(($j.create // []) | length)",
+      "  editovatelných polí:\(((($j.edit // {}).fields) // []) | length)",
+      "  spaces:             \(($c.spaces // []) | length)"
+    ' "$OUT" ;;
+esac
