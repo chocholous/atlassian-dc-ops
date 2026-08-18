@@ -20,8 +20,11 @@ Jediná věc, která se tady opakuje. PAT má v Data Center povinnou expiraci
 
 ## Práce
 
-**Všechno jde přes MCP `atlassian-eon`** — čtení i zápis pro obě instance.
-V Claude Code prostě řekni, co chceš. Seznam nástrojů je v `.mcp.json`.
+**Všechno jde přes MCP `atlassian-eon`** — všech **98 nástrojů**, čtení i zápis
+pro obě instance. Bez allowlistu záměrně: ruční seznam dvakrát způsobil tichou
+absenci nástroje, který byl celou dobu k dispozici. Cena je ~30k tokenů schémat
+místo 7k; zbytkové riziko je pět destruktivních nástrojů, na které platí
+potvrzovací pravidlo ve skillu.
 
 **`bin/atl-check`** ověří přístup, vypíše verze obou instancí a porovná je
 s `config/pins.json`. Existuje proto, že MCP se hlásí jako „connected" i
@@ -40,11 +43,12 @@ bin/atl-spec jira --show '/api/2/serverInfo'   # celý popis jedné cesty
 Specifikace se **necommitují** — jsou to Atlassianova díla. Repo drží jen URL,
 verzi a sha256 v `config/pins.json`; soubory jdou do gitignorovaného `spec/`.
 
-**Piny:** Confluence má specifikaci pro naši přesnou verzi (9.2.22). Jira ne —
-Atlassian publikuje jen řadu 10.0.x, takže připnutá je **10.0.5**, zatímco
-instance běží 10.3.23. Jádro `/rest/api/2` je stabilní, ale novější endpointy
-v tom specu chybět mohou. `bin/atl-check` hlásí drift, kdyby se instance
-bumpnula pod rukama.
+**Piny:** Confluence má spec pro naši přesnou verzi (9.2.22). Jira publikuje jen
+řadu `.0.x` každého major (10.0.0–10.0.6, 11.0.0–11.0.3), takže připnutá je
+**10.0.5** — a ta platí pro Jiru 10 včetně naší 10.3.23: empiricky ověřeno, 24
+z 24 vzorkovaných cest na instanci existuje. Spec je ale nekompletní, plugin API
+(`/rest/pat/latest`, `/rest/applinks/1.0`) v něm nejsou. `bin/atl-check` hlásí
+drift, kdyby se instance bumpnula pod rukama.
 
 Na ad-hoc dotaz nebo smyčku použij curl přímo — ale **token posílej na stdin,
 nikdy přes `-H`**, protože argumenty procesu čte každý lokální proces přes `ps`:

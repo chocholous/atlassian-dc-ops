@@ -15,13 +15,14 @@ do transkriptu, commitů ani souborů.
 
 ## Jedna vrstva
 
-**MCP `atlassian-eon` je default** — 19 nástrojů, čtení i zápis pro Jiru
-i Confluence, včetně metadat schématu (`jira_get_create_fields`,
-`jira_get_project_issue_types`). Přesný seznam je v `.mcp.json`.
+**MCP `atlassian-eon` je default a má všech 98 nástrojů** — čtení, zápis,
+metadata schématu, linkování, boardy, sprinty. Žádný allowlist, takže žádná
+tichá absence: když nástroj neznáš, hledej ho v `tools/list`, ne v configu.
 
-Linkování issues v allowlistu **není** — kdybys ho potřeboval, musí se přidat
-`jira_create_issue_link` i `jira_get_link_types` naráz, jinak jedno bez druhého
-nedává smysl.
+Mezi nimi je pět **destruktivních**: `jira_delete_issue`, `confluence_delete_page`,
+`confluence_delete_attachment`, `jira_remove_issue_link`, `jira_remove_watcher`.
+Nic je technicky neblokuje — platí na ně potvrzovací pravidlo níž, a u mazání
+si nech potvrdit i to, že jde opravdu o mazání, ne o úpravu.
 
 **MCP je jediná cesta.** REST obálky v repu nejsou — jejich jediné unikátní
 odůvodnění (`totalSize` z Confluence) padlo, protože `confluence_search` neumí
@@ -32,18 +33,26 @@ Když opravdu potřebuješ endpoint mimo MCP (smyčka, bulk, `remotelink`, CSV
 export), volej curl přímo podle receptu v `references/dc-odchylky.md` —
 **token na stdin, nikdy přes `-H`**.
 
-**Tvar endpointu nehádej — vytáhni ho z připnuté specifikace:**
+**Tvar endpointu nehádej — vytáhni ho z připnuté specifikace.** Tři příkazy,
+víc nepotřebuješ:
 
 ```bash
-bin/atl-spec jira createmeta          # cesty + metody
-bin/atl-spec jira --show '<cesta>'    # parametry a odpovědi
-bin/atl-spec conf '<vzor>'
+bin/atl-spec jira createmeta                   # které cesty existují + metody
+bin/atl-spec jira --show '/api/2/serverInfo'   # parametry, povinnost, odpovědi
+bin/atl-spec conf 'content/.*child'            # totéž pro Confluence
 ```
 
-Pozor na míru přesnosti: Confluence spec je pro naši verzi (9.2.22), **Jira spec
-je 10.0.5, ale instance běží 10.3.23** — Atlassian pro 10.3.x nic nepublikuje.
-Jádro v2 je stabilní, novější endpointy v tom specu ale chybět mohou. Když spec
-cestu nezná a instance ji přijme, věř instanci.
+Vzor je regulární výraz, case-insensitive. Jira cesty jsou relativní k `/rest`
+(`/api/2/...`, `/agile/1.0/...`), Confluence cesty už `/rest/api/...` obsahují.
+Když `spec/` chybí, spusť `bin/atl-spec fetch`.
+
+Spec **je platný pro naši verzi** — empiricky ověřeno, 24 z 24 vzorkovaných cest
+na instanci existuje. Ale je **nekompletní**: plugin API jako `/rest/pat/latest`
+nebo `/rest/applinks/1.0` v něm nejsou, i když na instanci fungují. Když spec
+cestu nezná a instance ji přijme, **věř instanci**.
+
+Pro zápisy je `jira_get_create_fields` lepší zdroj než spec: je živý, z naší
+přesné verze, per projekt a typ úkolu, a vrací `allowedValues`.
 
 Přístup ověříš `bin/atl-check`. `rc=2` znamená, že se nic nebo jen část
 ověřila — **to není úspěch**. Že se MCP hlásí jako „connected", důkaz není.
