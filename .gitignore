@@ -5,9 +5,6 @@
 *.token
 secrets/
 
-# jira-cli lokální stav a config (obsahuje login a cache schématu)
-.jira/
-config/jira-cli.yml
 
 # macOS
 .DS_Store
