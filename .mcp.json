@@ -7,7 +7,7 @@
         "--env-file",
         "/Users/chocholous/Projects/atlassian/.env",
         "--enabled-tools",
-        "jira_search,jira_get_issue,jira_add_comment,jira_get_transitions,jira_transition_issue,jira_update_issue,jira_create_issue,jira_search_fields,jira_get_project_issue_types,jira_get_agile_boards,jira_get_sprints_from_board,jira_get_sprint_issues,confluence_search,confluence_get_page,confluence_get_comments,confluence_add_comment,confluence_create_page,confluence_update_page_section"
+        "jira_search,jira_get_issue,jira_get_transitions,jira_search_fields,jira_get_project_issue_types,jira_get_agile_boards,jira_get_sprints_from_board,jira_get_sprint_issues,jira_get_create_fields,jira_get_link_types,jira_get_project_components,jira_get_project_versions,jira_get_field_options,jira_add_comment,jira_transition_issue,jira_update_issue,jira_create_issue,confluence_search,confluence_get_page,confluence_get_comments,confluence_add_comment,confluence_create_page,confluence_update_page_section"
       ]
     }
   }
