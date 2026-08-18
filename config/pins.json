@@ -1,5 +1,5 @@
 {
-  "_comment": "Připnuté verze. Specifikace se NEcommitují (Atlassianova díla) — stahuje je bin/atl-spec do gitignorovaného spec/ a ověřuje sha256.",
+  "_comment": "Specifikace se necommitují (Atlassianova díla) — bin/atl-spec je stahuje do gitignorovaného spec/ a ověřuje sha256.",
   "_verified": "2026-08-18",
   "tools": {
     "mcp_atlassian": "0.23.0",
@@ -14,7 +14,7 @@
     "spec": {
       "version": "10.0.5",
       "exact": false,
-      "note": "Atlassian publikuje jen řadu .0.x každého major (10.0.0-10.0.6, 11.0.0-11.0.3); pro 10.3.x samostatný spec není, ten pro 10.0.x je dokumentací Jiry 10. Empiricky ověřeno 2026-08-18: 24 z 24 vzorkovaných bezparametrových GET cest ze specu na naší 10.3.23 existuje, 0 chybí. Spec je tedy SPRÁVNÝ, ale NEKOMPLETNÍ — nepokrývá plugin API (/rest/pat/latest, /rest/applinks/1.0), která na instanci jsou. Když spec cestu nezná a instance ji přijme, věř instanci.",
+      "note": "Atlassian publikuje jen řadu .0.x každého major; pro 10.3.x spec není. Platnost pro 10.3.23 ověřena na 117/117 bezparametrových cestách. Nepokrývá plugin API.",
       "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_10005_swagger.v3.json",
       "sha256": "3635cc0f1d2512dd1611edd7e4970bdadd12e5b950637d461050ce2ab7ed021c",
       "paths": 285,
@@ -27,7 +27,6 @@
     "product_version": "9.2.22",
     "api": "/rest/api",
     "version_endpoint": "/rest/applinks/1.0/manifest",
-    "version_endpoint_note": "Confluence nemá serverInfo (404); verze je jen tady, pod jiným basem než /rest/api. Ve specu applinks není.",
     "spec": {
       "version": "9.2.22",
       "exact": true,

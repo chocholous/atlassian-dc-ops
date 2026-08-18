@@ -6,3 +6,6 @@
 
 # Stažené OpenAPI specifikace (Atlassianova díla, necommitují se)
 spec/
+
+# Výstupy sondování API (dočasné, může obsahovat data z instancí)
+probe/
