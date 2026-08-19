@@ -26,13 +26,15 @@ Auth je Personal Access Token — pro Server/DC jediná podporovaná cesta
 |---|---|---|
 | **Claude Code** | MCP server + skill + skripty | klon a setup níže; `.mcp.json` je projektová MCP konfigurace ([docs: MCP](https://code.claude.com/docs/en/mcp)), skill se načítá z `.claude/skills/` ([docs: Skills](https://code.claude.com/docs/en/skills)) |
 | **Claude Desktop** | MCP server | tentýž `uvx` příkaz v `claude_desktop_config.json` ([návod](https://modelcontextprotocol.io/quickstart/user)) — snippet níže |
-| **claude.ai** | skill | složku `.claude/skills/atlassian-dc/` zabal do zipu a nahraj v *Customize → Skills* ([návod](https://support.claude.com/en/articles/12512180-use-skills-in-claude)); vyžaduje zapnutý code execution |
+| **claude.ai / Claude Desktop (Chat, Cowork)** | skill | složku `.claude/skills/atlassian-dc/` zabal do zipu a nahraj v *Customize → Skills* ([návod](https://support.claude.com/en/articles/12512180-use-skills-in-claude)); vyžaduje zapnutý code execution. Skilly fungují ve všech třech módech desktopu — Chat, Cowork i Claude Code ([přehled](https://claude.com/resources/tutorials/navigating-the-claude-desktop-app)) |
 | **Cursor, VS Code a jiní MCP klienti** | MCP server | stejná `mcpServers` konfigurace ([mcp-atlassian: configuration](https://mcp-atlassian.soomiles.com/docs/configuration.md)) |
 | **shell / CI** | `atl-check`, `atl-spec` | rc kódy: 0 ok, 1 selhání/drift, 2 nic neověřeno |
 
-Nechceš klonovat? Plugin pro Claude Code (skill + MCP jedním příkazem) je
-v sesterském repu
-[atlassian-dc-plugin](https://github.com/chocholous/atlassian-dc-plugin).
+Nechceš klonovat? Plugin (skill + MCP jedním příkazem) je v sesterském repu
+[atlassian-dc-plugin](https://github.com/chocholous/atlassian-dc-plugin) —
+funguje v Claude Code i jako plugin marketplace pro claude.ai a Claude
+Desktop/Cowork
+([návod](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)).
 
 ## Nastavení (Claude Code)
 
@@ -107,6 +109,6 @@ i Atlassianovou vlastní specifikací (0 cest pod `/api/3`, 252 pod `/api/2`).
 | Repo | Obsah |
 |---|---|
 | **atlassian-dc-ops** (tady) | vše — MCP + skill + CLI skripty |
-| [atlassian-dc-plugin](https://github.com/chocholous/atlassian-dc-plugin) | totéž + marketplace s pluginem pro Claude Code (skill + MCP jedním příkazem) |
+| [atlassian-dc-plugin](https://github.com/chocholous/atlassian-dc-plugin) | totéž + marketplace s pluginem (skill + MCP) pro Claude Code, claude.ai i Claude Desktop/Cowork |
 | [atlassian-dc-mcp](https://github.com/chocholous/atlassian-dc-mcp) | jen MCP + skill, bez CLI |
 | [atlassian-dc-cli](https://github.com/chocholous/atlassian-dc-cli) | jen CLI/REST + skill, bez MCP |
