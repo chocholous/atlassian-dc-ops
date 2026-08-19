@@ -1,0 +1,39 @@
+{
+  "_comment": "Šablona. Zkopíruj na config/pins.json (gitignored) a doplň verze své instance. Verze zjistíš bin/atl-check. Specifikace se necommitují — bin/atl-spec je stahuje do gitignorovaného spec/ a ověřuje sha256.",
+  "_verified": "YYYY-MM-DD",
+  "tools": {
+    "mcp_atlassian": "0.23.0",
+    "mcp_atlassian_tools": "vše — .mcp.json nemá --enabled-tools"
+  },
+  "jira": {
+    "url": "https://jira.example.com",
+    "product_version": "10.x.y",
+    "api": "/rest/api/2",
+    "agile_api": "/rest/agile/1.0",
+    "api_v3_exists": false,
+    "spec": {
+      "version": "10.0.5",
+      "exact": false,
+      "covers_our_version": true,
+      "note": "Atlassian publikuje jen řadu .0.x každého major (10.0.0-10.0.6, 11.0.0-11.0.3); pro 10.3.x samostatný spec není. Platnost pro 10.3 ověřena na 117/117 bezparametrových cestách. Nepokrývá plugin API.",
+      "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_10005_swagger.v3.json",
+      "sha256": "3635cc0f1d2512dd1611edd7e4970bdadd12e5b950637d461050ce2ab7ed021c",
+      "paths": 285,
+      "docs": "https://developer.atlassian.com/server/jira/platform/rest/v10000/intro/"
+    }
+  },
+  "confluence": {
+    "url": "https://confluence.example.com",
+    "product_version": "9.x.y",
+    "api": "/rest/api",
+    "version_endpoint": "/rest/applinks/1.0/manifest",
+    "spec": {
+      "version": "VYPLŇ verzi své instance",
+      "exact": true,
+      "note": "Confluence publikuje spec per patch. URL a sha256 doplň podle své verze.",
+      "url": "https://dac-static.atlassian.com/server/confluence/<VERZE>.swagger.v3.json",
+      "sha256": "VYPLŇ — bin/atl-spec fetch selže, dokud nesouhlasí",
+      "docs": "https://developer.atlassian.com/server/confluence/rest/"
+    }
+  }
+}

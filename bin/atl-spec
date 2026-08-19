@@ -18,7 +18,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 PINS=config/pins.json
 DIR=spec
 
-[[ -f "$PINS" ]] || { echo "CHYBA: chybí $PINS" >&2; exit 1; }
+[[ -f "$PINS" ]] || { echo "CHYBA: chybí $PINS" >&2
+  echo "       Zkopíruj šablonu:  cp config/pins.example.json $PINS" >&2; exit 1; }
 command -v jq >/dev/null || { echo "CHYBA: chybí jq" >&2; exit 1; }
 
 key_for() { case "$1" in jira) echo jira ;; conf|confluence) echo confluence ;; *) return 1 ;; esac; }

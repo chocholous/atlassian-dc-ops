@@ -1,11 +1,17 @@
 # Tajemství — NIKDY necommitovat
 .env
 
+# Instanční konfigurace (verze, URL specifikací) — šablona je pins.example.json
+config/pins.json
+
+# Stažené OpenAPI specifikace (Atlassianova díla)
+spec/
+
+# Výstupy sondování API (dočasné, obsahují data z instancí)
+probe/
+
 # macOS
 .DS_Store
 
-# Stažené OpenAPI specifikace (Atlassianova díla, necommitují se)
-spec/
-
-# Výstupy sondování API (dočasné, může obsahovat data z instancí)
-probe/
+# MCP config obsahuje absolutní cestu — šablona je .mcp.example.json
+.mcp.json
