@@ -12,10 +12,16 @@ načte sám.
 
 ```bash
 cp .env.example .env && chmod 600 .env             # doplň URL a tokeny
+cp .mcp.example.json .mcp.json                     # nahraď cestu k .env absolutní cestou
 cp config/pins.example.json config/pins.json       # doplň verze své instance
 bin/atl-check                                      # musí dát rc=0
 bin/atl-spec fetch                                 # stáhne OpenAPI specifikace
 ```
+
+`.mcp.json` nemá `--enabled-tools` schválně — všech 98 nástrojů je k dispozici.
+Ruční allowlist se neudržuje, protože tichá absence nástroje je horší než širší
+kontext (zjištěno dvakrát tvrdě: vyřazený nástroj vedl k tomu, že se jeho funkce
+znovu postavila ručně).
 
 Personal Access Token si vytvoř ve webovém UI (v DC má povinnou expiraci):
 `<JIRA_URL>/secure/ViewProfile.jspa` a

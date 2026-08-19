@@ -6,7 +6,6 @@
     "mcp_atlassian_tools": "vše — .mcp.json nemá --enabled-tools"
   },
   "jira": {
-    "url": "https://jira.example.com",
     "product_version": "10.x.y",
     "api": "/rest/api/2",
     "agile_api": "/rest/agile/1.0",
@@ -23,7 +22,6 @@
     }
   },
   "confluence": {
-    "url": "https://confluence.example.com",
     "product_version": "9.x.y",
     "api": "/rest/api",
     "version_endpoint": "/rest/applinks/1.0/manifest",

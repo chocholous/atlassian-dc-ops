@@ -1,5 +1,4 @@
 {
-  "_comment": "Zkopíruj na .mcp.json a nahraď cestu k .env absolutní cestou ke svému repu. Bez --enabled-tools jsou k dispozici všechny nástroje (98) — allowlist se neudržuje, protože tichá absence nástroje je horší než širší kontext.",
   "mcpServers": {
     "atlassian-dc": {
       "command": "uvx",

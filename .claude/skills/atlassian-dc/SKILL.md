@@ -1,14 +1,22 @@
 ---
 name: atlassian-dc
-description: Práce s Atlassian Jira Data Center a Confluence Data Center (self-hosted) přes MCP — issues, JQL, sprinty, boardy, stránky, CQL, komentáře, PAT tokeny, REST API. Použij vždy, když jde o self-hosted Jiru nebo Confluence, o Data Center instanci, nebo když se řeší autentizace a REST API takové instance. NEPOUŽÍVEJ pro Atlassian Cloud (*.atlassian.net) — tam platí jiné API a jiné nástroje. Konkrétní hostnames a klíče projektů si přidej do tohoto popisu, aby se skill spouštěl i na ně.
+description: Práce s Atlassian Jira Data Center a Confluence Data Center (self-hosted). Pozžij při práci s issues, epics, JQL, sprinty, boardy, stránky, CQL, komentáře.
 ---
 
 # Atlassian Data Center
 
-Všechno jde přes MCP `atlassian-dc` (mcp-atlassian, bez allowlistu — všech 98
-nástrojů). URL instancí a tokeny jsou v `.env` (gitignored) — **tokeny nikdy
-nevypisuj** do transkriptu, commitů ani souborů. Verze instancí a připnuté
-specifikace drží `config/pins.json` (gitignored, šablona `pins.example.json`).
+Všechno jde přes MCP `atlassian-dc`. URL instancí a tokeny jsou v `.env` (gitignored)
+— **tokeny nikdy nevypisuj** do transkriptu, commitů ani souborů. Verze instancí
+a připnuté specifikace drží `config/pins.json` (gitignored, šablona
+`pins.example.json`).
+
+## Než začneš
+
+Problem je v konfiguraci, dokud neplatí následující:
+
+1. **`bin/atl-check` vrátí `rc=0`.** Rc=1 (dílčí selhání) i rc=2 (nic
+   neověřeno, chybí token) jsou stop.
+2. **`claude mcp list | grep atlassian-dc` ukazuje `✔ Connected`.**
 
 ## Fakta
 
@@ -36,7 +44,8 @@ neověřené, je to napsané.
 | Specifikace | Jira: Atlassian publikuje jen řadu `.0.x` každého major, ta platí pro celý major (ověřeno 117/117 cest). Confluence: per patch, tedy přesně. Ani jedna nepokrývá plugin API (`/rest/pat/latest`, `/rest/applinks/1.0`) — když spec cestu nezná a instance ji přijme, **věř instanci** |
 | Těžké endpointy | `/api/2/worklog/deleted` a `/updated` (chybí `since`), `/rest/api/label/recent` (chybí `limit`) — bez parametrů timeout |
 | MCP „connected" | **není důkaz** — server startuje i s prázdnými tokeny a selže až první volání |
-| PAT | povinná expirace → náhlé 401 napříč vším je vypršelý token, ne rozbitá konfigurace |
+| MCP „Pending approval" | server je v .mcp.json, ale ještě nebyl schválený → **žádný `mcp__atlassian-dc__*` nástroj v session není**. `ToolSearch` na jejich jména vrací prázdno. Schválit interaktivně přes `claude` |
+| PAT | povinná expirace → náhlé 401 napříč vším je vypršelý token. Naopak timeout na jednom endpointu (jiné se stejným PAT prošly) = transient, ne token |
 | Destruktivní nástroje | `jira_delete_issue`, `confluence_delete_page`, `confluence_delete_attachment`, `jira_remove_issue_link`, `jira_remove_watcher` |
 | `acli` (oficiální) | Cloud-only, proti DC nefunguje |
 
